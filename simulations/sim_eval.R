@@ -59,7 +59,7 @@ df_est3$sampling_est <- recode_factor(df_est3$sampling_est, true="true", past="p
 levels(df_est3$sampling_est) <- c('(A)~~True~sampling',
                                   expression((B)~~Past~average~~~Delta~"="~250),
                                   expression((B)~~Past~day~~~Delta~"="~1),
-                                  '(C)~~Daily~sampling')
+                                  '(C)~~Same-day~sampling')
 
 
 
@@ -130,7 +130,7 @@ ggsave("simulations/plots/Sim_RMSE_rel_RV_iidnoise.pdf", width=8, height=6.5)
 p <- ggplot(df_est3 %>% 
               dplyr::filter(M>=13, 
                             noise_setting_name!="No~noise",
-                            sampling_est %in% c('(C)~~Daily~sampling', expression((B)~~Past~average~~~Delta~"="~250)))) +
+                            sampling_est %in% c('(C)~~Same-day~sampling', expression((B)~~Past~average~~~Delta~"="~250)))) +
   geom_hline(aes(yintercept=0)) +
   geom_vline(aes(xintercept=26), lty="dashed", col="grey40") +
   geom_vline(aes(xintercept=390), lty="dashed", col="grey40") +
@@ -161,7 +161,7 @@ ggsave("simulations/plots/Sim_Bias_rel_RVAC1.pdf", plot=p_new3, width=8, height=
 p <- ggplot(df_est3 %>% 
               dplyr::filter(M>=13, 
                             noise_setting_name!="No~noise",
-                            sampling_est %in% c('(C)~~Daily~sampling', expression((B)~~Past~average~~~Delta~"="~250)))) +
+                            sampling_est %in% c('(C)~~Same-day~sampling', expression((B)~~Past~average~~~Delta~"="~250)))) +
   geom_hline(aes(yintercept=0)) +
   geom_vline(aes(xintercept=26), lty="dashed", col="grey40") +
   geom_vline(aes(xintercept=390), lty="dashed", col="grey40") +

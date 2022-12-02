@@ -20,7 +20,7 @@ df_RV_full <- readRDS(file = paste0(dir_base, "/application/data/RV_est_RollingS
 M_set <-  c(6,13,26,78,260,390,585,780)
 
 # Set this to either "RV" or RV_AC1" to get the different plots
-choice_est <- "RV_AC1"
+choice_est <- "RV"
 
 df_RV <- df_RV_full %>% 
   dplyr::filter(Date >= as_date("2010-01-01"), 
@@ -54,6 +54,7 @@ cluster %>%
 
 
 # Actual evaluation in parallel
+set.seed(1)
 df_RV_eval <- df_RV_proxy %>%
   group_by(asset, sampling, days_past, M, type_estimator) %>%
   partition(cluster) %>% 
@@ -79,7 +80,7 @@ df_plot_RV_eval <- df_RV_eval %>%
                 !sampling %in% c("CTS")) 
 
 # Improve the facet labels
-df_plot_RV_eval_pretty <- df_plot_RV_eval %>%
+df_plot_RV_eval_pretty_hlp <- df_plot_RV_eval %>%
   mutate(asset = factor(asset),
          M = factor(M),
          sampling_pretty = factor(paste0(sampling,"_",days_past))) %>%
@@ -94,36 +95,40 @@ df_plot_RV_eval_pretty <- df_plot_RV_eval %>%
   ungroup()
 
 
+df_plot_RV_eval_pretty <- df_plot_RV_eval_pretty_hlp
+
 levels(df_plot_RV_eval_pretty$sampling_pretty) 
-levels(df_plot_RV_eval_pretty$sampling_pretty) <- c('BTS:~(C)~Daily~sampling',
+levels(df_plot_RV_eval_pretty$sampling_pretty) <- c('BTS:~(C)~Same-day~sampling',
                                                     expression(BTS:~(B)~Past~avg~~Delta~"="~5),
                                                     expression(BTS:~(B)~Past~avg~~Delta~"="~20),
                                                     expression(BTS:~(B)~Past~avg~~Delta~"="~250),
-                                                    'TTS:~(C)~Daily~sampling',
+                                                    'TTS:~(C)~Same-day~sampling',
                                                     expression(TTS:~(B)~Past~avg~~Delta~"="~5),
                                                     expression(TTS:~(B)~Past~avg~~Delta~"="~20),
                                                     expression(TTS:~(B)~Past~avg~~Delta~"="~250))
 
 # Manual selection for the standard RV estimator
-# levels(df_plot_RV_eval_pretty$significant_label)
-# levels(df_plot_RV_eval_pretty$significant_label) <- c(expression(28~"%"~positive~~~4~"%"~negative),
-#                                                       expression(27~"%"~positive~~~3~"%"~negative),
-#                                                       expression(30~"%"~positive~~~9~"%"~negative),
-#                                                       expression(26~"%"~positive~~~5~"%"~negative),
-#                                                       expression(35~"%"~positive~~~6~"%"~negative),
-#                                                       expression(33~"%"~positive~~~6~"%"~negative),
-#                                                       expression(29~"%"~positive~~~6~"%"~negative),
-#                                                       expression(34~"%"~positive~~~7~"%"~negative))
+# df_plot_RV_eval_pretty_hlp %>% filter(asset == "AA", M==78) %>% select(sampling, days_past, significant_label)
+levels(df_plot_RV_eval_pretty_hlp$significant_label)
+levels(df_plot_RV_eval_pretty$significant_label) <- c(expression(29~"%"~positive~~~4~"%"~negative),
+                                                      expression(27~"%"~positive~~~4~"%"~negative),
+                                                      expression(28~"%"~positive~~~8~"%"~negative),
+                                                      expression(25~"%"~positive~~~4~"%"~negative),
+                                                      expression(34~"%"~positive~~~6~"%"~negative),
+                                                      expression(32~"%"~positive~~~6~"%"~negative),
+                                                      expression(29~"%"~positive~~~6~"%"~negative),
+                                                      expression(34~"%"~positive~~~7~"%"~negative))
 
-# Manual selection for the RV AC(1) estimator
-levels(df_plot_RV_eval_pretty$significant_label)
-levels(df_plot_RV_eval_pretty$significant_label) <- c(expression(28~"%"~positive~~~6~"%"~negative),
-                                                      expression(32~"%"~positive~~~5~"%"~negative),
-                                                      expression(27~"%"~positive~~~7~"%"~negative),
-                                                      expression(28~"%"~positive~~~7~"%"~negative),
-                                                      expression(24~"%"~positive~~~13~"%"~negative),
-                                                      expression(24~"%"~positive~~~10~"%"~negative),
-                                                      expression(30~"%"~positive~~~9~"%"~negative))
+# # Manual selection for the RV AC(1) estimator
+# # df_plot_RV_eval_pretty_hlp %>% filter(asset == "AA", M==78) %>% select(sampling, days_past, significant_label) %>% arrange(sampling,days_past)  
+# levels(df_plot_RV_eval_pretty_hlp$significant_label)
+# levels(df_plot_RV_eval_pretty$significant_label) <- c(expression(28~"%"~positive~~~7~"%"~negative),
+#                                                       expression(33~"%"~positive~~~5~"%"~negative),
+#                                                       expression(28~"%"~positive~~~6~"%"~negative),
+#                                                       expression(24~"%"~positive~~~12~"%"~negative),
+#                                                       expression(28~"%"~positive~~~8~"%"~negative),
+#                                                       expression(23~"%"~positive~~~10~"%"~negative),
+#                                                       expression(31~"%"~positive~~~9~"%"~negative))
 
 
 ## Plot points with magnitude of RMSE gains/losses as a color scale!
