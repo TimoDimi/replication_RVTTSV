@@ -37,3 +37,9 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+
+# excluded data folders
+git_ignore/
+application/data/
+simulations/data/
