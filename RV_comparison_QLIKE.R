@@ -1,17 +1,15 @@
 
-# This function implements the data-based RV ranking method of Patton (2011, JoE)
-RV_comparison <- function(RV, RV_baseline, IV_proxy, B=500){
+# This function implements the data-based RV ranking method of Patton (2011, JoE) for the QLIKE loss function
+RV_comparison_QLIKE <- function(RV, RV_baseline, IV_proxy, B=500){
   
-  # Loss difference
-  loss_diff <- na.omit((RV_baseline - IV_proxy)^2 - (RV - IV_proxy)^2)
+  QLIKE_fct <- function(x,y){ y/x - log(y/x) - 1 }
   
-  # Relative (R)MSE improvements
-  MSE_rel <- (mean((RV_baseline-IV_proxy)^2, na.rm=T) - mean((RV-IV_proxy)^2, na.rm=T))/mean((RV_baseline-IV_proxy)^2, na.rm=T)
-  RMSE_rel <- (sqrt(mean((RV_baseline-IV_proxy)^2, na.rm=T)) - sqrt(mean((RV-IV_proxy)^2, na.rm=T)))/sqrt(mean((RV_baseline-IV_proxy)^2, na.rm=T))
-
+  loss_diff <- na.omit(QLIKE_fct(RV_baseline,IV_proxy) - QLIKE_fct(RV, IV_proxy))
   Delta_L <- mean(loss_diff, na.rm = T)
   
-  
+  # Relative (R)MSE improvements
+  QLIKE_rel <- (mean(QLIKE_fct(RV_baseline,IV_proxy), na.rm=T) - mean(QLIKE_fct(RV,IV_proxy), na.rm=T)) / mean(QLIKE_fct(RV_baseline,IV_proxy), na.rm=T)
+
   # Block Bootstrap
   n <- length(loss_diff)
   bl <- ceiling(sqrt(n)) # Default block length
@@ -49,8 +47,6 @@ RV_comparison <- function(RV, RV_baseline, IV_proxy, B=500){
   return(tibble(mean_loss_diff = Delta_L,
                 mean_loss_diff_normalized=mean_loss_diff_normalized,
                 mean_loss_diff_normalized_bt=mean_loss_diff_normalized_bt,
-                MSE_rel=MSE_rel,
-                RMSE_rel=RMSE_rel,
+                QLIKE_rel=QLIKE_rel,
                 p_val = p_val))
 }
-

@@ -42,5 +42,5 @@ vignettes/*.pdf
 
 # excluded data folders
 git_ignore/
-application/data/
+application/data/ 
 simulations/data/

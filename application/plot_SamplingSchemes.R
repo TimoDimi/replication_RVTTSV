@@ -8,7 +8,7 @@ date_plot <- as_date("2015-05-01")
 
 
 # Load data
-dat_resampled <- readRDS(file = paste0(dir_base,"/application/data/resampled/",asset,"_prices_resampled.rds"))
+dat_resampled <- readRDS(file = paste0(dir_base,"/application/data/resampled_RR/",asset,"_prices_resampled_starting2012.rds"))
 dat_ticks <- readRDS(file = paste0(dir_base,"/application/data/filtered_rds/",asset,"_ticks.rds"))
 
 dat_ticks <- dat_ticks %>% 
@@ -20,18 +20,18 @@ dat_resampled <- dat_resampled %>%
 
 # Careful: This "filtering" only works for prices, not for returns!
 dat_resampled_plot <- dat_resampled %>%
-  dplyr::filter(sampling %in% c("CTS", "BTS_past", "TTS_past"),
+  dplyr::filter(sampling %in% c("CTS", "BTS_realized_rolling_avg50", "TTS_realized"),
                 time_sampling %in% seq(from = as_datetime("2015-05-01 00:00:00"),
                                        to = as_datetime("2015-05-01 06:30:00"),
                                        by = 15*60)) %>%
   mutate(time_last_tick = time_last_tick + seconds(34200),
-         sampling=factor(sampling, levels=c('CTS','TTS_past','BTS_past'))) %>%
+         sampling=factor(sampling, levels=c('CTS','TTS_realized','BTS_realized_rolling_avg50'))) %>%
   rename(Time = time_last_tick)
 
 # Change names in plot layout
 levels(dat_resampled_plot$sampling) <- c("CTS     ",
-                                         "TTS     ",
-                                         "BTS     ")
+                                         "rTTS     ",
+                                         "rBTS     ")
 legend_title <- "Sampling Scheme     "
 
 

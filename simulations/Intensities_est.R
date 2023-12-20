@@ -52,7 +52,7 @@ df_intensity_avg <- df_intensity_est %>%
             sigma2_avg = mean(lambda_hat*varsigma2_hat))
 
 # Safe estimated file
-saveRDS(df_intensity_avg, file = "simulations/data/IBM_intensities_est.rds")
+saveRDS(df_intensity_avg, file = "simulations/IBM_intensities_est.rds")
 
 
 
