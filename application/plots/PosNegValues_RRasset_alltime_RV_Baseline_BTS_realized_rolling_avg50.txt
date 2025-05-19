@@ -1,0 +1,15 @@
+% latex table generated in R 4.4.3 by xtable 1.8-4 package
+% Mon May  5 10:46:25 2025
+\begin{table}[ht]
+\centering
+\begin{tabular}{llrrlrr}
+  \toprule
+sampling & empty1 & pos\_RMSE & neg\_RMSE & empty2 & pos\_QLIKE & neg\_QLIKE \\ 
+  \midrule
+CTS &  & 0 & 55 &  & 2 & 90 \\ 
+  rTTS &  & 4 & 42 &  & 0 & 89 \\ 
+  iBTS &  & 4 & 29 &  & 14 & 27 \\ 
+  HTS &  & 30 & 16 &  & 64 & 12 \\ 
+   \bottomrule
+\end{tabular}
+\end{table}

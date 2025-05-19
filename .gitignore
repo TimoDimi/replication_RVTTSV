@@ -44,3 +44,4 @@ vignettes/*.pdf
 git_ignore/
 application/data/ 
 simulations/data/
+SCS-FUCHS/data_sim/
