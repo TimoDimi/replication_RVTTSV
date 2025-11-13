@@ -45,3 +45,6 @@ git_ignore/
 application/data/ 
 simulations/data/
 SCS-FUCHS/data_sim/
+
+# excluded files from previous revisions
+application/application_HAR_forecasting_RR2.R

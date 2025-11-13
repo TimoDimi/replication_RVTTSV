@@ -56,7 +56,37 @@ ggplot(df_plot_joint %>% dplyr::filter(type!="sampling")) +
         axis.ticks.x = element_line(colour = df_plot$axis_col)) +
   coord_cartesian(xlim =c(NA, as_datetime("2015-05-01 09:31:10.000")))
 
+
+ggplot(df_plot_joint %>% dplyr::filter(type!="sampling")) + 
+  geom_vline(data=df_plot_joint %>% dplyr::filter(type=="sampling"),
+             aes(xintercept=Time), col="red", lty="dashed") +
+  geom_point(data=df_plot_joint %>% dplyr::filter(type=="sampling"),
+             aes(x=Time, y=LogPriceHlp), col="red", shape=15, size=4) +
+  geom_segment(aes(x=Time, xend=NextTick, y=value, yend=value), col="grey40") +
+  geom_point(aes(x=Time, y=value), col="blue") +
+  facet_wrap(~type_facet, ncol=1, scales="free") +
+  ggh4x::force_panelsizes(rows = c(0.5, 1)) +
+  ggh4x::facetted_pos_scales(
+    y = list(
+      # nur für das obere Panel (z.B. type_facet == "upper") die Integer-Werte
+      type_facet == "N(t)" ~ scale_y_continuous(limits = c(0, 10), breaks = seq(0, 10, 2))
+    )
+  ) +
+  scale_x_continuous(breaks = tick_breaks,
+                     labels = parse(text = levels(df_plot$axis_label)),
+                     minor_breaks=c(1)) +
+  theme_bw() +
+  ylab("Value") +
+  theme(axis.text.x = element_text(colour = df_plot$axis_col),
+        axis.ticks.x = element_line(colour = df_plot$axis_col)) +
+  coord_cartesian(xlim =c(NA, as_datetime("2015-05-01 09:31:10.000")))
+
+
 ggsave("application/plots/plot_TTSVModelIllustration_Joint.pdf", width=8, height=5)
+
+
+
+
 
 
 

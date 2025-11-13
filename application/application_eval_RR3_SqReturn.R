@@ -1,5 +1,6 @@
 # This file produces the evaluation results for the the application (the results without the pre-averaging estimator).
-# The results generated here rely on RV with CTS and M=78 as the proxy variable.
+# The results generated here rely on the squared return as the proxy variable (CTS and M=1).
+
 
 library(multidplyr)
 library(dplyr, warn.conflicts = FALSE)
@@ -20,106 +21,33 @@ source("RV_comparison_QLIKE.R")
 
 dir_base <- getwd()
 
-# Read the individual files with RV estimates
-# file list RVs:
-data_files_RVest <- list.files(path="application/data/RV_est_RR2/", full.names=TRUE, recursive=FALSE)
+# Load file with RV estimates (modified in the other evaluation file)
+df_RV_full_mod <- readRDS(file = paste0(dir_base, "/application/data/RVest_res_modified.rds")) %>%
+  filter(type_estimator == "RV",
+         M %in% c(1,13,26,39,78,130,260,390))
 
-df_RV_full_raw <- tibble()
-for (file in data_files_RVest){
-  df_tmp <- readRDS(file)
-  df_RV_full_raw <- bind_rows(df_RV_full_raw, df_tmp)
-}
+# Set negative RV (of RV_PAVG...) estimates to some eps_RV
+eps_RV <- df_RV_full_mod %>% filter(type_estimator=="RV") %>% pull(RV) %>% min() %>% max(10^(-7)) # Use the smallest RV estimate
 
+# Load daily squared returns
+df_daily_squared_returns <- readRDS(paste0(dir_base, "/application/data/Daily_squared_returns.rds")) %>%
+  select(Date, RV, asset, sampling, M, type_estimator) %>%
+  mutate(RV = pmax(RV, eps_RV),
+         M_avg = M,
+         M_avg_asset = M,
+         M_avg_asset_month = M,
+         M_rounded = M)
 
-# Save daily squared returns for forecast evaluation:
-saveRDS(df_RV_full_raw %>% filter(sampling == "CTS", M==1, type_estimator=="RV"), 
-        file = paste0(dir_base, "/application/data/Daily_squared_returns.rds"))
-
-
-## Just plot a choice of common M values
-M_set_full <- c(13,26,39,78,130,260,390,780,1170,1560,2340,4680)
-
-
-#####################################################################################
-#####################################################################################
-#####################################################################################
-###   Round M values to neirest M_set for HTS and stopping time sampling schemes
-
-
-# Rounding helper function (vectorized)
-round_own <- function(numbers, rounding_set){
-  low <- findInterval(numbers, rounding_set)
-  high <- low+1 
-  low.diff <- numbers - rounding_set[ifelse(low==0,NA,low)]
-  high.diff <- rounding_set[ifelse(high==0,NA,high)] - numbers
-  mins <- pmin(low.diff,high.diff,na.rm=T) 
-  pick <- ifelse(!is.na(low.diff) & mins==low.diff, low, high)
-  return(rounding_set[pick])
-  # return(list(rounded_numbers=rounding_set[pick], rounding_number_index=pick))
-}
+# Bind files
+df_RV_joint <- bind_rows(df_RV_full_mod, df_daily_squared_returns)
 
 
 
-df_RV_full_raw <- df_RV_full_raw %>% 
-  filter(M >= 7) %>% 
-  mutate(Month = month(Date), Year = year(Date))
-
-
-# Modify "stopping" and "HTS" sampling schemes with different aggregate information of M
-df_RV_full_mod <- bind_rows(
-  df_RV_full_raw %>%
-    filter(!str_detect(sampling, "stopping") & sampling!="HTS") %>%
-    mutate(M_avg = M,
-           M_avg_asset = M,
-           M_avg_asset_month=M),
-  df_RV_full_raw %>%
-    filter(sampling == "HTS") %>%
-    group_by(sampling, type_estimator, delta) %>%
-    mutate(M_avg = mean(M)) %>%
-    ungroup() %>% group_by(sampling, type_estimator, asset, delta) %>%
-    mutate(M_avg_asset = mean(M)) %>%
-    ungroup() %>% group_by(sampling, type_estimator, asset, delta, Month, Year) %>%
-    mutate(M_avg_asset_month = mean(M)),
-  df_RV_full_raw %>%
-    filter(str_detect(sampling, "stopping")) %>%
-    group_by(sampling, type_estimator, n_aggregate) %>%     # I.e., average M over all days, all assets, 
-    mutate(M_avg = mean(M)) %>%
-    ungroup() %>% group_by(sampling, type_estimator, asset, n_aggregate) %>%   # I.e., average M over all days,
-    mutate(M_avg_asset = mean(M)) %>%
-    ungroup() %>% group_by(sampling, type_estimator, asset, n_aggregate, Month, Year) %>%    # I.e., average M over (all days in a month), 
-    mutate(M_avg_asset_month = mean(M))
-)
-
-
-# Rounde the M's to the M_set provided!
-df_RV_full_mod <- df_RV_full_mod %>%
-  # filter(str_detect(sampling, "stopping") | sampling=="HTS") %>%
-  mutate(M_rounded = round_own(M, rounding_set=M_set_full),
-         M_avg_rounded = round_own(M_avg, rounding_set=M_set_full),
-         M_avg_asset_rounded = round_own(M_avg_asset, rounding_set=M_set_full),
-         M_avg_asset_month_rounded = round_own(M_avg_asset_month, rounding_set=M_set_full))
-
-
-
-saveRDS(df_RV_full_mod, file = paste0(dir_base, "/application/data/RVest_res_modified.rds"))
-
-
-
-
-
-#####################################################################################
-#####################################################################################
-#####################################################################################
-
-
-
-
-df_RV_full_mod <- readRDS(file = paste0(dir_base, "/application/data/RVest_res_modified.rds"))
 
 
 estim_set <- c("RV")
 baseline_sampling_set <- c("CTS", "BTS_realized_rolling_avg50")
-aggregation_methods <- c("none", "monthly", "alltime", "asset_alltime")
+aggregation_methods <- c("none")
 sampling_schemes_compare <- c("CTS", "TTS_realized", "BTS_rolling_avg50", "BTS_realized_rolling_avg50", "HTS")
 
 
@@ -130,22 +58,22 @@ for (aggregation_method in aggregation_methods){
   
   # Aggregation variant for HTS and stopping time based schemes
   if (aggregation_method == "none"){
-    df_RV_full_duplicates <- df_RV_full_mod %>%
+    df_RV_full_duplicates <- df_RV_joint %>%
       rename(M_individual = M, M = M_rounded)   # Setting: Round every (delta, asset, date) INDIVIDUALLY to its closest value in the given M_set
   } else if (aggregation_method == "monthly"){
-    df_RV_full_duplicates <- df_RV_full_mod %>%
+    df_RV_full_duplicates <- df_RV_joint %>%
       select(-M) %>%
       rename(M_individual = M_avg_asset_month, M = M_avg_asset_month_rounded) # Setting: Round every (delta, asset, month) but AVERAGED OVER ALL DAYS IN THAT MONTH to its closest value in the given M_set
   } else if (aggregation_method == "alltime"){
-    df_RV_full_duplicates <- df_RV_full_mod %>%
+    df_RV_full_duplicates <- df_RV_joint %>%
       select(-M) %>%
       rename(M_individual = M_avg_asset, M = M_avg_asset_rounded)   # Setting: Round every (delta, asset) but AVERAGED OVER ALL DAYS to its closest value in the given M_set
   } else if (aggregation_method == "asset_alltime"){
-    df_RV_full_duplicates <- df_RV_full_mod %>%
+    df_RV_full_duplicates <- df_RV_joint %>%
       select(-M) %>%
       rename(M_individual = M_avg, M = M_avg_rounded)   # Setting: Round every (delta) but AVERAGED OVER ALL DAYS AND ASSETS to its closest value in the given M_set
   }
-
+  
   
   # Remove duplicates: Often two individual M values are mapped to the same M_round. Use the closest M to M_round.
   df_RV_full <- df_RV_full_duplicates %>%
@@ -163,13 +91,13 @@ for (aggregation_method in aggregation_methods){
     dplyr::filter(Date != "2015-08-24") %>% # Bad day for many stocks
     dplyr::filter( !(Date == "2015-11-10" & asset == "MCD")) # Bad day for MCD
   
-
+  
   # Loop over different estimators (RV and PVAG)
   for (choice_est in estim_set){
     
     if (choice_est == "RV"){
-      M_proxy_choice <- 78
-      M_set <-  c(13,26,39,78,130,260,390)
+      M_proxy_choice <- 1
+      M_set <-  c(1,13,26,39,78,130,260,390)
     } else {
       M_proxy_choice <- 4680
       M_set <- c(78,260,390,780,2340,4680)
@@ -178,15 +106,17 @@ for (aggregation_method in aggregation_methods){
     
     # Loop over different baseline sampling schemes
     for (choice_baseline_sampling in baseline_sampling_set){
-    
+      
       # Fix a baseline and a proxy. The proxy is however more important than the baseline.
       # The first mutate replicates one RV value per group for the baseline (and RV_proxy_hlp)
       # The second mutate call "leads" the RV_proxy_hlp by Date
+      
       df_RV_proxy <- df_RV %>%
         filter(sampling %in% sampling_schemes_compare) %>%
         group_by(asset, Date) %>%
         mutate(RV_proxy_hlp = RV[M==M_proxy_choice & type_estimator=="RV" & sampling=="CTS"]) %>%  
         ungroup() %>%
+        filter(M != 1) %>%
         group_by(asset, Date, M) %>%
         mutate(RV_baseline = RV[type_estimator==choice_est & sampling==choice_baseline_sampling]) %>%
         dplyr::filter(M %in% M_set,
@@ -233,12 +163,12 @@ for (aggregation_method in aggregation_methods){
                                       B=5000),
                   n=n()) %>%
         collect() %>%
-      dplyr::filter(!(sampling %in% choice_baseline_sampling))
+        dplyr::filter(!(sampling %in% choice_baseline_sampling))
       
       # Close cluster
       rm(cluster)
       
-        
+      
       # Transform into plotting data frames
       sig_level <- 0.05
       
@@ -343,7 +273,7 @@ for (aggregation_method in aggregation_methods){
         theme(legend.position = "bottom") +
         guides(col = guide_colourbar(barwidth = 15, barheight = 1, title="Relative RMSE Improvement    "))
       
-      ggsave(paste0("application/plots/appl_eval_RR2_MSE_aggregation_",aggregation_method,"_",choice_est,"_Baseline_",choice_baseline_sampling,".pdf"), width=9, height=6)
+      ggsave(paste0("application/plots/appl_eval_RR3_MSE_aggregation_",aggregation_method,"_",choice_est,"_Baseline_",choice_baseline_sampling,"ProxySqReturn.pdf"), width=9, height=6)
       
       
       
@@ -363,67 +293,12 @@ for (aggregation_method in aggregation_methods){
         theme(legend.position = "bottom") +
         guides(col = guide_colourbar(barwidth = 15, barheight = 1, title="Relative QLIKE Improvement    "))
       
-      ggsave(paste0("application/plots/appl_eval_RR2_QLIKE_aggregation_",aggregation_method,"_",choice_est,"_Baseline_",choice_baseline_sampling,".pdf"), width=9, height=6)
+      ggsave(paste0("application/plots/appl_eval_RR3_QLIKE_aggregation_",aggregation_method,"_",choice_est,"_Baseline_",choice_baseline_sampling,"ProxySqReturn.pdf"), width=9, height=6)
       
     }
   }
 }
-  
-
-saveRDS(df_CompPosNeg, file = paste0(dir_base, "/application/data/df_CompPosNeg.rds"))
-
-  
 
 
-
-##############
-# Save summary tables
-
-df_CompPosNeg$sampling <- factor(df_CompPosNeg$sampling, 
-                                       levels = c("CTS", 
-                                                  "TTS_rolling_avg50", "TTS_realized","TTS_realized_stopping",
-                                                  "BTS_rolling_avg50", "BTS_realized_rolling_avg50", "BTS_realized_stopping_rolling_avg50",
-                                                  "HTS"))    
-levels(df_CompPosNeg$sampling) <- c("CTS",
-                                    "iTTS", "rTTS", "rsTTS",
-                                    "iBTS", "rBTS", "rsBTS",
-                                    "HTS")
-
-
-
-# Loop over aggregation methods 
-for (aggregation_method in aggregation_methods){
-  # Loop over different estimators (RV and PVAG)
-  for (choice_est in estim_set){
-    # Loop over different baseline sampling schemes
-    for (choice_baseline_sampling in baseline_sampling_set){
-
-      # Print a table with amount of positive/negative losses for CTS
-      df_CompPosNeg_pretty <- df_CompPosNeg %>%
-        dplyr::filter(aggreg_method==aggregation_method,
-                      type_estimator==choice_est,
-                      baseline_sampling==choice_baseline_sampling) %>%
-        rename(pos=significant_pos, neg=significant_neg) %>%
-        mutate(pos = 100*pos,
-               neg = 100*neg) %>%
-        mutate(col_id = paste0(loss)) %>%
-        select(baseline_sampling, sampling, col_id, pos, neg) %>%
-        pivot_wider(names_from = col_id,
-                    values_from = c(pos,neg),
-                    names_vary="slowest") %>%
-        arrange(sampling) 
-      
-      
-      df_CompPosNeg_pretty %>%
-        mutate(empty1=NA, empty2=NA, empty3=NA, empty4=NA) %>%
-        dplyr::select(sampling, empty1,
-                      pos_RMSE, neg_RMSE, empty2,
-                      pos_QLIKE, neg_QLIKE) %>% 
-        xtable::xtable(digits=c(0,0,0, 0,0,0, 0,0)) %>%
-        print(file=paste0("application/plots/PosNegValues_RR",aggregation_method,"_",choice_est,"_Baseline_",choice_baseline_sampling,".txt"), include.rownames=FALSE, booktabs=TRUE)  
-      
-    }
-  }
-}
 
 

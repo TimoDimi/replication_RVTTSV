@@ -1,15 +1,15 @@
 % latex table generated in R 4.4.3 by xtable 1.8-4 package
-% Mon Oct  6 09:49:42 2025
+% Mon Oct  6 11:37:37 2025
 \begin{table}[ht]
 \centering
 \begin{tabular}{llrrlrr}
   \toprule
 sampling & empty1 & pos\_RMSE & neg\_RMSE & empty2 & pos\_QLIKE & neg\_QLIKE \\ 
   \midrule
-CTS &  & 0 & 56 &  & 2 & 90 \\ 
-  rTTS &  & 4 & 43 &  & 0 & 89 \\ 
-  HTS &  & 33 & 18 &  & 74 & 10 \\ 
-   &  & 3 & 48 &  & 34 & 60 \\ 
+CTS &  & 13 & 12 &  & 50 & 43 \\ 
+  rTTS &  & 40 & 10 &  & 56 & 41 \\ 
+  rBTS &  & 49 & 3 &  & 63 & 29 \\ 
+  HTS &  & 39 & 0 &  & 97 & 0 \\ 
    \bottomrule
 \end{tabular}
 \end{table}

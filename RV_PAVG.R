@@ -1,5 +1,5 @@
 
-
+# Pre-averaging RV estimator
 RV_PAVG <- function(returns, H=NA){
   # returns: financial log-returns
   # H: Bandwidth for pre-averaging
@@ -7,7 +7,7 @@ RV_PAVG <- function(returns, H=NA){
   # Bandwidth parameters
   # NT <- length(t_tick)
   # m <- floor(m_factor * NT/TT)
-  if (is.na(H)) { H <- ceiling(sqrt(length(returns)))}
+  if (is.na(H)) { H <- ceiling(0.5*sqrt(length(returns)))}
   
   # help functions
   g <- function(x){ x * (1-x) * (x>=0 & x<=1) }
@@ -21,10 +21,14 @@ RV_PAVG <- function(returns, H=NA){
   }
   
   # Pre-averaged RV estimator
-  sum_h2 <- sum(h_fun(1:(H-1),H)^2) 
-  RV <- 1/(H*g2) * sum(r_bar^2)  -  sum_h2/(2*H*g2) * sum(returns^2)
-    
+  g_1 = 1/3
+  
+  RV <- 1/(H*g2) * sum(r_bar^2)  -  (1/H*g_1)/(2*H*g2) * sum(returns^2)
+  
   RV
 }
+
+
+
 
 

@@ -13,17 +13,20 @@ df_plot <- bind_rows(
   dat %>%
     dplyr::filter(DateTime >= as_datetime("2015-05-01 15:57:00"), 
                   DateTime <= as_datetime("2015-05-01 16:00:00")) %>%
-    mutate(Daytime = "Evening",
+    mutate(Daytime = "Afternoon",
            NextTick = lead(DateTime))) %>%
   mutate(Time=DateTime,
-         Daytime_f = factor(Daytime, levels=c('Morning','Evening')))
+         Daytime_f = factor(Daytime, levels=c('Morning','Afternoon')))
 
 
-ggplot(df_plot) + 
-  geom_segment(aes(x=Time, xend=NextTick, y=LogPrice, yend=LogPrice), col="grey40") +
-  geom_point(aes(x=Time, y=LogPrice), col="blue") +
-  facet_wrap(~Daytime_f, scales="free_x") +
-  ylab("Log-price") +
+ggplot(df_plot) +
+  geom_segment(aes(x = Time, xend = NextTick, y = LogPrice, yend = LogPrice), col = "grey40") +
+  geom_point(aes(x = Time, y = LogPrice), col = "blue") +
+  facet_wrap(~Daytime_f, scales = "free_x") +
+  scale_y_continuous(
+    name = "Log-price",
+    sec.axis = dup_axis(name = NULL)   # duplicates axis ticks on the right
+  ) +
   theme_bw() +
   theme(panel.spacing = unit(1, "lines"))
 
